@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="300">
+<title>Upside-Rechner VR-Angst-DiGA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+img{max-width:100%}
+/* Layout: ruhiges Dashboard, eine Spalte mit Kennzahlen, drei Karten, Jahrestabelle, Diagramm; brainjo-Farben, nur Blau als Akzent */
+:root{
+  --bg:#f7f7fc; --card:#ffffff; --fg:#4a4f68; --body:#6f7594; --muted:#9aa0bd; --line:#dcdeeb; --line-soft:#ebedf5;
+  --accent:#2a8aff; --accent-deep:#1663c7; --accent-soft:#eaf3ff; --accent-light:#7fbaff; --basis:#c3c7d9;
+  --font:"Lato","Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#171923; --card:#1f2230; --fg:#eef0f7; --body:#b7bccf; --muted:#8a90aa; --line:#343849; --line-soft:#2a2e3d;
+  --accent:#4f9fff; --accent-deep:#8ec2ff; --accent-soft:#213554; --accent-light:#3a78c4; --basis:#4b5068; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#171923; --card:#1f2230; --fg:#eef0f7; --body:#b7bccf; --muted:#8a90aa; --line:#343849; --line-soft:#2a2e3d;
+  --accent:#4f9fff; --accent-deep:#8ec2ff; --accent-soft:#213554; --accent-light:#3a78c4; --basis:#4b5068; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--body);font-family:var(--font);font-size:14px;line-height:1.45;margin:0;
+  padding-block:28px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1180px;margin:0 auto;display:grid;gap:22px}
+h1{font-size:26px;font-weight:900;color:var(--fg);margin:0 0 6px;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:16px;font-weight:700;color:var(--fg);margin:0 0 10px}
+.sub{margin:0;max-width:70ch}
+.note{font-size:12px;color:var(--muted);margin:4px 0 0}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;min-width:0}
+.kpi .lab{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.kpi .val{font-size:28px;font-weight:900;color:var(--fg);margin:6px 0 2px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi.total .val{color:var(--accent)}
+.kpi .cap{font-size:12px;color:var(--muted)}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0;display:grid;gap:10px;align-content:start}
+.card h3{margin:0;font-size:15px;color:var(--fg);font-weight:700}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13px}
+.row label{color:var(--body)}
+.ctl{display:grid;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line-soft)}
+select,input[type=number]{font:inherit;font-weight:700;color:var(--accent-deep);background:var(--accent-soft);border:1px solid transparent;border-radius:8px;padding:5px 8px;min-width:150px;text-align:center}
+input[type=number]{width:150px}
+select:focus,input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.switch{min-width:150px;padding:6px 8px;border-radius:999px;border:0;font:inherit;font-weight:700;cursor:pointer;background:var(--accent);color:#fff}
+.switch[aria-pressed="false"]{background:var(--line);color:var(--body)}
+.out{display:grid;gap:6px}
+.out .row{font-variant-numeric:tabular-nums}
+.out .v{font-weight:700;color:var(--fg)}
+.out .big{border-top:1px solid var(--line-soft);padding-top:6px;margin-top:2px}
+.out .big .v{color:var(--accent);font-size:17px;font-weight:900}
+.why{font-size:12px;color:var(--muted);margin:0}
+details{font-size:12px}
+summary{cursor:pointer;color:var(--accent);font-weight:700;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary::after{content:" ↓";font-weight:400}
+details[open] summary::after{content:" ↑"}
+.ptab{width:100%;border-collapse:collapse;margin-top:8px}
+.ptab th,.ptab td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+.ptab th{color:var(--muted);font-weight:700;font-size:11px}
+.ptab input{min-width:0;width:68px;padding:2px 4px;font-size:12px;text-align:right}
+.ptab td.src{color:var(--muted);font-size:11px}
+.ptab td.act{font-weight:700;color:var(--fg);text-align:right;white-space:nowrap}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;min-width:0}
+.scroll{overflow-x:auto}
+table.yt{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:13px}
+.yt th,.yt td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+.yt th:first-child,.yt td:first-child{text-align:left}
+.yt thead th{color:var(--muted);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.yt tr.total td{font-weight:900;color:var(--fg);border-top:1px solid var(--line)}
+.yt tr.dim td{color:var(--muted);font-size:12px}
+.yt td.sum{font-weight:700;color:var(--fg)}
+.yt td .sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:7px;vertical-align:-1px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;margin-top:8px}
+.legend span i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+svg{width:100%;height:auto;display:block}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.list{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:13px}
+.list li{display:grid;grid-template-columns:150px 1fr;gap:10px}
+.list b{color:var(--fg);font-weight:700}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;background:var(--line-soft);color:var(--body);margin-left:6px}
+.tag.no{background:var(--accent-soft);color:var(--accent-deep)}
+footer{font-size:12px;color:var(--muted);max-width:90ch}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.cards,.two{grid-template-columns:1fr}.list li{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.switch{transition:background .2s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Upside-Rechner VR-Angst-DiGA</h1>
+    <p class="sub">Basis sind die Verordnungen je Marktjahr aus Julias Business Case (Blatt „Einnahmen Basis“). Drei Upsides lassen sich zuschalten; jede Karte zeigt, wie viele Verordnungen dazukommen und woran sich drehen lässt.</p>
+    <p class="note">KI-Auswertung auf Basis von Julias Business Case, D2P-Hochrechnung, Hausarzt-Potenzial und TAM/SAM/SOM · Stand 28.10.2026 · Marktjahr 1 = erstes Jahr nach Listung · blaue Felder sind Eingaben · Seite lädt alle 5 Minuten neu, Einstellungen bleiben im Browser erhalten</p>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="cards" id="cards"></section>
+
+  <section class="panel">
+    <h2>Verordnungen je Marktjahr</h2>
+    <div class="scroll"><table class="yt" id="ytable"></table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Basis und Upsides im Verlauf</h2>
+    <div id="chart"></div>
+    <div class="legend" id="legend"></div>
+  </section>
+
+  <section class="two">
+    <div class="panel">
+      <h2>Was steckt schon in Julias Basis?</h2>
+      <ul class="list">
+        <li><b>Verordner</b><span>nur Psychotherapeut:innen: 44.392 × Offenheit 60 % (+1 Prozentpunkt je Jahr)</span></li>
+        <li><b>Patient:innen</b><span>840.000 in Behandlung × Offenheit 20 % (+1 Punkt je Jahr) × Eignung 75 %</span></li>
+        <li><b>Marktdurchdringung</b><span>2 % im Jahr 1 bis 12,5 % ab Jahr 9, Annahme ohne Quelle</span></li>
+        <li><b>Hausärzt:innen</b><span>nicht enthalten <span class="tag no">Upside 3</span></span></li>
+        <li><b>Wiederverschreibungen</b><span>nicht enthalten, eine Verordnung je Patient:in und Jahr <span class="tag no">Upside 2</span></span></li>
+        <li><b>Direct-to-Patient</b><span>nicht enthalten, Kontaktstrecke und SEO zielen auf Fachkreise <span class="tag no">Upside 1</span></span></li>
+        <li><b>International</b><span>nicht enthalten, Selbstzahler-Upside ohne Verordnungen</span></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>Basis-Annahmen (Julia)</h2>
+      <ul class="list" id="basisInputs"></ul>
+      <p class="note">Mit 15 % Patienten-Offenheit statt 20 % (Klärung 28.10.) sinken Basis und Folge-VO um ein Viertel.</p>
+    </div>
+  </section>
+
+  <footer>Rechenwege: Basis = Patient:innen × Offenheit × Eignung × Offenheit Therapeut:innen × Marktdurchdringung. D2P = Budget ÷ Klickpreis × Klick→Lead × Lead→Code mit Lernkurve bis Kundenwert : Kosten = 3. Hausärzt:innen = gewonnene Praxen × Verordnungen je Praxis, Praxen bleiben mit Retention aktiv. Wiederverschreibungen = Rate × alle Erst-Verordnungen. Quellen und Prüfhinweise stehen in der Excel-Datei Upside_Rechner_VR-Angst-DiGA.</footer>
+</div>
+
+<script>
+'use strict';
+const NY=11, SZ=['konservativ','Basis','optimistisch'];
+const nf=new Intl.NumberFormat('de-DE',{maximumFractionDigits:0});
+const pf=(v,d=0)=>new Intl.NumberFormat('de-DE',{style:'percent',maximumFractionDigits:d}).format(v);
+const ef=v=>nf.format(v)+' €';
+const sum=a=>a.reduce((x,y)=>x+y,0);
+
+// ---------- Zustand
+const S={
+  basis:{start:2030,bet_soz:2300000,q_soz:.15,bet_ago:1000000,q_ago:.2,bet_spz:5900000,q_spz:.05,wachs:.01,off_pat:.2,off_pat_d:.01,eign:.75,ther:44392,off_th:.6,off_th_d:.01,preis1:350,preis2:240,
+         md:[.02,.035,.05,.065,.08,.095,.105,.115,.125,.125,.125]},
+  d2p:{on:true,sz:1,meth:'funnel',budget:100000,wachs:.32,start:2,
+       p:{google:[.5,.5,.5],cpc_g:[4.76,1.95,1.32],cr_g:[.0336,.042,.0752],cpc_m:[1.92,1.2,.52],cr_m:[.018,.0451,.0772],l_arzt:[.2,.325,.4],l_vo:[.47,.6,.8],l_code:[.5,.7,.82],ziel:[3,3,3],zieljahr:[3,3,3],ust:[.19,.19,.19],varc:[0,0,0],ueb:[0,0,0],pool:[2750049,2750049,2750049],deckel:[.005,.01,.02],aufschlag:[.15,.15,.3]}},
+  fv:{on:true,sz:1,same:.75,base:.075,p:{rate:[.075,.095,.15]}},
+  ha:{on:true,sz:1,meth:'bottom',budget:100000,ad:.3,
+      p:{n_ha:[55778,55778,55778],spz_share:[.6,.6,.6],ha_ago:[.056,.056,.056],ha_soz:[.095,.095,.095],ha_spz:[.021,.021,.021],e_ago:[.73,.73,.73],e_soz:[.67,.67,.67],e_spz:[.85,.85,.85],
+         s1:[.1,.1,.1],s2:[.3,.3,.3],s3:[.13,.13,.13],f1:[2,2,2],f2:[1.3,1.3,1.3],f3:[1,1,1],t1:[.3,.3,.3],t2:[.5,.5,.5],diag:[.73,.73,.73],annahme:[.2,.25,.3],sel:[1,1.5,2.5],pull:[.5,.75,1.25],
+         conv:[.2,.3,.4],akt:[.45,.55,.7],ret:[.65,.75,.85],wirk:[.5,.5,.5],sh_tel:[.25,.25,.25],sh_li:[.1,.1,.1],ad_cost:[170,170,170],ad_vis:[3,3,3],ad_fac:[1,1,1],tel_h:[25,25,25],tel_n:[14,14,14],tel_c:[.04,.04,.04],tel_fac:[.6,.6,.6],tel_fix:[1548,1548,1548],tel_fu:[80,80,80],
+         li_reach:[.13,.13,.13],li_n:[10,10,10],li_r:[.08,.08,.08],li_fac:[.7,.7,.7],li_fix:[960,960,960],m_cost:[.67,.67,.67],m_w:[3,3,3],m_r:[.024,.024,.024],m_reg:[.53,.53,.53],m_live:[.67,.67,.67],m_fac:[1,1,1],m_fix:[5252,5252,5252],td_pool:[398400,398400,398400],td_ber:[.3,.3,.79]}}
+};
+// Beschriftung der Annahmen: [key, Name, Quelle, Format]
+const META={
+ d2p:[['google','Anteil Google Ads (Rest Meta)','Platzhalter, Kanal-Mix offen','%'],['cpc_g','Kosten je Klick Google','US-Healthcare / DE Gesundheit / DE Ø','€2'],['cr_g','Klick → Lead Google','US / DE / US Ø','%2'],['cpc_m','Kosten je Klick Meta','US / DE Mitte / DE','€2'],['cr_m','Klick → Lead Meta','Dental / US','%2'],['l_arzt','Lead geht zur Behandler:in','Proxy Lead → Termin 20 bis 35 %','%1'],['l_vo','Behandler:in verordnet','47 % halten DiGA für sinnvoll (BARMER)','%'],['l_code','Rezept wird eingelöst','Papierrezept 50 bis 70 %, GKV 82 %','%'],['ziel','Ziel Kundenwert : Kosten','Julian: 1 : 2 bis 1 : 3','x'],['zieljahr','Jahr nach Start, in dem das Ziel erreicht ist','Lernkurve, Datei: Jahr 3','n'],['ust','Umsatzsteuer','für Kundenwert netto','%'],['varc','Variable Kosten je Patient:in','0 = nur Umsatz netto','€'],['ueb','Überschneidung mit Julias Basis','0 %, weil Basis nur 2 bis 12,5 % Durchdringung annimmt','%'],['pool','Per D2P erreichbare Betroffene','Heinig 2021 × Social-Media-Nutzung','n'],['deckel','Deckel: max. Anteil des Pools je Jahr','Schutz vor dem linearen Modell','%1'],['aufschlag','Methode Aufschlag: Zusatz auf Erst-VO','TAM/SAM/SOM 15 % / 30 %','%']],
+ fv:[['rate','Folgeverordnungen je Erst-Verordnung','7,5 % Beschluss Base Case, 9,5 % Upside, 15 % TK; Markt bis 24 % (BARMER)','%1']],
+ ha:[['n_ha','Hausärzt:innen in Deutschland','KBV 2025','n'],['spz_share','Anteil F40.2 im Produktumfang','Schätzung','%'],['ha_ago','In Hausarztpraxis wegen Angst: F40.0','Heinig 2021','%1'],['ha_soz','… F40.1','Heinig 2021','%1'],['ha_spz','… F40.2','Heinig 2021','%1'],['e_ago','Eignung F40.0','brainjo-Befragung n = 33','%'],['e_soz','Eignung F40.1','wie oben','%'],['e_spz','Eignung F40.2','wie oben','%'],['s1','Segment S1 Psychosomatik','Schätzung','%'],['s2','Segment S2 DiGA-erfahren','Stiftung Gesundheit 2024','%'],['s3','Segment S3 interessiert','Wangler & Jansky 2022','%'],['f1','Fallzahl-Faktor S1','Schätzung','x'],['f2','Fallzahl-Faktor S2','Schätzung','x'],['f3','Fallzahl-Faktor S3','Durchschnitt','x'],['t1','Targeting-Mix S1','Annahme','%'],['t2','Targeting-Mix S2','Annahme','%'],['diag','Fälle mit gesicherter Diagnose','Ärztebefragung 2026','%'],['annahme','Patient:in nimmt DiGA an','Schwabe-BC +5 Punkte','%'],['sel','Selektionsfaktor aktivierte Praxen','Schätzung','x'],['pull','Patientenanfragen je Praxis und Jahr','Schätzung','n2'],['conv','Überzeugungsquote im Gespräch','Vorgabe ca. 30 %','%'],['akt','Aktivierung: überzeugt → verordnet','Regressrisiko bremst','%'],['ret','Retention im Folgejahr','Schätzung','%'],['wirk','Wirksamkeit im Gewinnungsjahr','Rechenkonvention','%'],['sh_tel','Budgetanteil Telefon','Annahme','%'],['sh_li','Budgetanteil LinkedIn','Annahme','%'],['ad_cost','Außendienst: Kosten je Besuch','Schwabe-BC','€'],['ad_vis','Außendienst: Besuche je Praxis','Annahme','n'],['ad_fac','Außendienst: Überzeugungsfaktor','Referenz','x'],['tel_h','Telefon: Kosten je Stunde','Werkstudent','€'],['tel_n','Telefon: Anwahlversuche je Stunde','brainjo 2026','n'],['tel_c','Telefon: Hausärzt:in selbst am Telefon','Schätzung','%1'],['tel_fac','Telefon: Überzeugungsfaktor','Annahme','x'],['tel_fix','Telefon: Fixkosten je Jahr','Placetel','€'],['tel_fu','Telefon: Follow-up je Praxis','Schätzung','€'],['li_reach','LinkedIn: erreichbar','Akquise-Auswertung','%'],['li_n','LinkedIn: Nachrichten je Stunde','Schätzung','n'],['li_r','LinkedIn: Antwortquote','Benchmark','%'],['li_fac','LinkedIn: Überzeugungsfaktor','Annahme','x'],['li_fix','LinkedIn: Fixkosten je Jahr','Sales Navigator','€'],['m_cost','Fachaussand: Kosten je Kontakt','Schwabe-BC','€2'],['m_w','Fachaussand: Wellen je Jahr','Schwabe-BC','n'],['m_r','Reaktion je Kontakt','Brevo 2,4 %','%1'],['m_reg','Registrierung je Reaktion','CME-Webinar','%'],['m_live','Live-Teilnahme','CME-Webinar','%'],['m_fac','Webinar: Überzeugungsfaktor','Annahme','x'],['m_fix','Webinar: Fixkosten je Jahr','Schätzung','€'],['td_pool','Top-down: nur hausärztlich Behandelte','TAM/SAM/SOM','n'],['td_ber','Top-down: Verordnungsbereitschaft','30 % / 79 % (Wangler & Jansky)','%']]
+};
+const fmt=(v,t)=>t==='%'?pf(v):t==='%1'?pf(v,1):t==='%2'?pf(v,2):t==='€'?ef(v):t==='€2'?new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(v):t==='x'?nf.format(v)+'×':t==='n2'?new Intl.NumberFormat('de-DE',{maximumFractionDigits:2}).format(v):nf.format(v);
+
+// ---------- Modell
+function calcBasis(b){
+  const pat=b.bet_soz*b.q_soz+b.bet_ago*b.q_ago+b.bet_spz*b.q_spz, r={pat:[],off:[],user:[],verord:[],potvo:[],md:[],reach:[],vo:[],preis:[]};
+  for(let i=0;i<NY;i++){
+    r.pat[i]=pat*Math.pow(1+b.wachs,i); r.off[i]=b.off_pat+b.off_pat_d*i; r.user[i]=r.pat[i]*r.off[i]*b.eign;
+    const offth=b.off_th+b.off_th_d*i; r.verord[i]=b.ther*offth; r.potvo[i]=r.user[i]*offth; r.md[i]=b.md[i];
+    r.reach[i]=r.verord[i]*r.md[i]; r.vo[i]=r.potvo[i]*r.md[i]; r.preis[i]=i?b.preis2:b.preis1;
+  }
+  return r;
+}
+const A=(o)=>{const a={};for(const k in o.p)a[k]=o.p[k][o.sz];return a;};
+function calcHA(h,B){
+  const a=A(h), ziel=Math.round(a.n_ha*(a.s1+a.s2+a.s3)), t3=1-a.t1-a.t2;
+  const bet=[S.basis.bet_ago,S.basis.bet_soz,S.basis.bet_spz*a.spz_share], hs=[a.ha_ago,a.ha_soz,a.ha_spz], eig=[a.e_ago,a.e_soz,a.e_spz];
+  const fall=bet.map((v,j)=>v*hs[j]/a.n_ha), fs=sum(fall), ant=fall.map(v=>v/fs);
+  const seg=f=>sum(fall.map((v,j)=>v*f*a.sel*a.diag*eig[j]*a.annahme+a.pull*ant[j]));
+  const vopp=seg(a.f1)*a.t1+seg(a.f2)*a.t2+seg(a.f3)*t3;
+  const bud=h.budget, ad=h.ad;
+  const li_b=a.sh_li>0?Math.max(0,bud*a.sh_li-a.li_fix):0, li_msg=Math.min(li_b/(a.tel_h/a.li_n),ziel*a.li_reach), li_conv=li_msg*a.li_r*a.conv*a.li_fac, li_rest=li_b-li_msg*a.tel_h/a.li_n;
+  const sh_mail=Math.max(0,1-ad-a.sh_tel-a.sh_li), m_b=sh_mail>0?Math.max(0,bud*sh_mail-a.m_fix):0, m_k=Math.min(m_b/a.m_cost,ziel*a.m_w), m_conv=m_k*a.m_r*a.m_reg*a.m_live*a.conv*a.m_fac, m_rest=m_b-m_k*a.m_cost;
+  const t_b=(a.sh_tel+li_rest+m_rest>0)?Math.max(0,bud*a.sh_tel+li_rest+m_rest-a.tel_fix):0, t_cp=a.tel_h/(a.tel_n*a.tel_c)/(a.conv*a.tel_fac)+a.tel_fu, t_conv=Math.min(t_b/t_cp,ziel*a.conv*a.tel_fac);
+  const ad_conv=Math.min(bud*ad/(a.ad_cost*a.ad_vis),ziel)*a.conv*a.ad_fac;
+  const conv_all=li_conv+m_conv+t_conv+ad_conv, neu=conv_all*a.akt;
+  const bu=[],td=[]; let act=0;
+  for(let i=0;i<NY;i++){ bu[i]=(neu*a.wirk+act*a.ret)*vopp; act=neu+act*a.ret;
+    td[i]=a.td_pool*Math.pow(1+S.basis.wachs,i)*a.td_ber*B.off[i]*S.basis.eign*B.md[i]; }
+  const res=h.on?(h.meth==='bottom'?bu:td):bu.map(()=>0);
+  return {res,bu,td,vopp,neu,conv_all,ziel,budget:h.on&&h.meth==='bottom'?bud:0};
+}
+function calcD2P(d,B,HA,folgeRate){
+  const a=A(d);
+  const leads=1000*a.google/a.cpc_g*a.cr_g+1000*(1-a.google)/a.cpc_m*a.cr_m, l2c=a.l_arzt*a.l_vo*a.l_code, vo1000=leads*l2c;
+  const clvN=p=>p*(1+folgeRate)/(1+a.ust)-a.varc;
+  const voZiel=1000*a.ziel/clvN(S.basis.preis2), faktor=vo1000>0?voZiel/vo1000:0, verb=(a.zieljahr<=1||faktor<=0)?0:Math.pow(faktor,1/(3*(a.zieljahr-1)))-1;
+  const fun=[],auf=[],bud=[],vo1k=[];
+  for(let i=0;i<NY;i++){ const t=i+1, f=Math.pow(1+verb,Math.min(Math.max(t-d.start+1,1),a.zieljahr)-1);
+    const lead_t=1000*a.google/(a.cpc_g/f)*(a.cr_g*f)+1000*(1-a.google)/(a.cpc_m/f)*(a.cr_m*f), l2c_t=Math.min(1,l2c*f); vo1k[i]=lead_t*l2c_t;
+    bud[i]=t<d.start?0:d.budget*Math.pow(1+d.wachs,t-d.start);
+    fun[i]=Math.min(bud[i]/1000*vo1k[i],a.pool*a.deckel)*(1-a.ueb);
+    auf[i]=(B.vo[i]+HA.res[i])*a.aufschlag; }
+  const res=d.on?(d.meth==='funnel'?fun:auf):fun.map(()=>0);
+  return {res,fun,auf,bud:d.on&&d.meth==='funnel'?bud:bud.map(()=>0),vo1000,cac1:vo1000?1000/vo1000:0,clv1:clvN(S.basis.preis1),verb};
+}
+function calcFV(f,erst){
+  const rate=f.p.rate[f.sz], fy=[]; let prev=0;
+  for(let i=0;i<NY;i++){ const ent=erst[i]*rate; fy[i]=ent*f.same+prev*(1-f.same); prev=ent; }
+  return {res:f.on?fy:fy.map(()=>0),rate};
+}
+function model(){
+  const B=calcBasis(S.basis), HA=calcHA(S.ha,B), FV0=S.fv.p.rate[S.fv.sz], D=calcD2P(S.d2p,B,HA,FV0);
+  const erst=B.vo.map((v,i)=>v+D.res[i]+HA.res[i]), FV=calcFV(S.fv,erst);
+  const tot=B.vo.map((v,i)=>v+D.res[i]+FV.res[i]+HA.res[i]);
+  return {B,HA,D,FV,erst,tot};
+}
+
+// ---------- Darstellung
+const $=s=>document.querySelector(s);
+function kpis(m){
+  const b=sum(m.B.vo),t=sum(m.tot),z=t-b;
+  const tiles=[['Verordnungen Basis',nf.format(b),'Julia, Marktjahr 1 bis 11'],['Zusätzlich durch Upsides',nf.format(z),'eingeschaltete Upsides, Jahr 1 bis 11'],['Gesamt mit Upsides',nf.format(t),'Basis + Upsides, Jahr 1 bis 11','total'],['Faktor Gesamt ÷ Basis',(t/b).toLocaleString('de-DE',{maximumFractionDigits:2})+'×','Jahr 1 bis 11'],['Verordnungen Marktjahr 11',nf.format(m.tot[10]),'Basis '+nf.format(m.B.vo[10])+' · Zusatz '+nf.format(m.tot[10]-m.B.vo[10])]];
+  $('#kpis').innerHTML=tiles.map(t=>`<div class="kpi ${t[3]||''}"><div class="lab">${t[0]}</div><div class="val">${t[1]}</div><div class="cap">${t[2]}</div></div>`).join('');
+}
+function ptable(key,o){
+  const idx=o.sz;
+  return `<details><summary>Alle Annahmen (${META[key].length}, änderbar)</summary><table class="ptab"><thead><tr><th>Annahme</th><th>aktiv</th><th>kons.</th><th>Basis</th><th>opt.</th></tr></thead><tbody>`+
+    META[key].map(([k,n,src,t])=>`<tr><td>${n}<div class="src">${src}</div></td><td class="act">${fmt(o.p[k][idx],t)}</td>`+[0,1,2].map(j=>`<td><input type="number" step="any" id="${key}-${k}-${j}" value="${o.p[k][j]}" data-key="${key}" data-k="${k}" data-j="${j}"></td>`).join('')+`</tr>`).join('')+`</tbody></table><p class="note">Eingabe als Dezimalzahl (0,25 = 25 %). Die Spalte „aktiv“ folgt dem gewählten Szenario.</p></details>`;
+}
+function card(id,title,ctl,outs,why,key,o){
+  return `<article class="card" id="card-${id}"><h3>${title}</h3><div class="ctl">${ctl}</div><div class="out">${outs}</div><p class="why">${why}</p>${ptable(key,o)}</article>`;
+}
+const sel=(id,opts,val,label)=>`<div class="row"><label for="${id}">${label}</label><select id="${id}">${opts.map(([v,l])=>`<option value="${v}" ${String(v)===String(val)?'selected':''}>${l}</option>`).join('')}</select></div>`;
+const num=(id,val,label,step,min,max)=>`<div class="row"><label for="${id}">${label}</label><input type="number" id="${id}" value="${val}" step="${step}" min="${min}" max="${max}"></div>`;
+const sw=(id,on)=>`<div class="row"><label>Schalter</label><button class="switch" id="${id}" aria-pressed="${on}">${on?'Ein':'Aus'}</button></div>`;
+const szSel=(id,v)=>sel(id,SZ.map((s,i)=>[i,s]),v,'Szenario');
+const orow=(l,v,big)=>`<div class="row ${big?'big':''}"><span>${l}</span><span class="v">${v}</span></div>`;
+function outs(res,extra){ return orow('+ Verordnungen Jahr 1',nf.format(res[0]))+orow('+ Verordnungen Jahr 5',nf.format(res[4]))+orow('+ Verordnungen Jahr 11',nf.format(res[10]))+orow('+ Verordnungen Jahr 1 bis 11',nf.format(sum(res)),true)+extra; }
+function cards(m){
+  const d=S.d2p,f=S.fv,h=S.ha;
+  const dBud=sum(m.D.bud), dRes=sum(m.D.res);
+  const c1=card('d2p','1 · Direct-to-Patient-Marketing',
+    sw('d2p-on',d.on)+szSel('d2p-sz',d.sz)+sel('d2p-meth',[['funnel','Funnel (Budget)'],['auf','Aufschlag (TAM)']],d.meth,'Methode')+sel('d2p-budget',[[50000,'50.000 €'],[100000,'100.000 €'],[200000,'200.000 €'],[300000,'300.000 €']],d.budget,'Mediabudget im Startjahr')+num('d2p-start',d.start,'Startjahr (Marktjahr)',1,1,11)+num('d2p-wachs',Math.round(d.wachs*100),'Budgetwachstum je Jahr in %',1,0,100),
+    outs(m.D.res,orow('Budget je zusätzlicher VO (Ø)',dRes?ef(dBud/dRes):'–')+orow('Jahr 1 nach Start: VO je 1.000 €',m.D.vo1000.toLocaleString('de-DE',{maximumFractionDigits:1})+' (CAC '+ef(m.D.cac1)+', Kundenwert '+ef(m.D.clv1)+')')),
+    'Online-Werbung führt Patient:innen zu Rezept oder Kassenantrag. Budget ÷ Klickpreis × Klick→Lead × Lead→Code, Lernkurve bis Kundenwert : Kosten = 3. Nicht in Julias Basis.','d2p',d);
+  const c2=card('fv','2 · Wiederverschreibungen',
+    sw('fv-on',f.on)+szSel('fv-sz',f.sz)+orow('Aktive Rate',pf(m.FV.rate,1))+num('fv-same',Math.round(f.same*100),'Anteil im selben Marktjahr in %',5,0,100),
+    outs(m.FV.res,orow('Folge-VO in % der Erst-VO (Ø)',pf(sum(m.FV.res)/sum(m.erst),1))+orow('davon Base-Case-Anteil (7,5 %)',nf.format(sum(m.FV.res)*Math.min(1,f.base/m.FV.rate)))),
+    'Julia rechnet eine Verordnung je Patient:in und Jahr. Beschluss 28.10.: 7,5 % Folge-VO gehören in den Base Case, 9,5 % sind Upside, Markt 13 bis 24 %. Gilt für alle Erst-VO, auch aus Upside 1 und 3.','fv',f);
+  const hRes=sum(m.HA.res), hBud=m.HA.budget*NY;
+  const c3=card('ha','3 · Hausärzt:innen verordnen zusätzlich',
+    sw('ha-on',h.on)+szSel('ha-sz',h.sz)+sel('ha-meth',[['bottom','Bottom-up (Budget)'],['top','Top-down (TAM)']],h.meth,'Methode')+sel('ha-budget',[[50000,'50.000 €'],[100000,'100.000 €'],[200000,'200.000 €'],[300000,'300.000 €']],h.budget,'Budget je Jahr')+num('ha-ad',Math.round(h.ad*100),'Budgetanteil Außendienst in %',5,0,100),
+    outs(m.HA.res,orow('Budget je zusätzlicher VO (Ø)',hRes&&hBud?ef(hBud/hRes):'–')+orow('Neue Praxen je Jahr · VO je Praxis',nf.format(m.HA.neu)+' · '+m.HA.vopp.toLocaleString('de-DE',{maximumFractionDigits:1}))),
+    'Hausärzt:innen stellen heute 45 bis 51 % der DiGA-Verordnungen, Julias Basis zählt nur Psychotherapeut:innen. Gewonnene Praxen verordnen weiter, 75 % bleiben im Folgejahr aktiv. Ohne Schwabe-Außendienst den Anteil auf 0 setzen.','ha',h);
+  $('#cards').innerHTML=c1+c2+c3;
+}
+const SERIES=[['Basis (Julia)','basis','B'],['+ Direct-to-Patient-Marketing','accent-deep','D'],['+ Wiederverschreibungen','accent','FV'],['+ Hausärzt:innen','accent-light','HA']];
+function rows(m){return [m.B.vo,m.D.res,m.FV.res,m.HA.res];}
+function ytable(m){
+  const R=rows(m), yrs=[...Array(NY).keys()];
+  let h=`<thead><tr><th>Kennzahl</th>${yrs.map(i=>`<th>Jahr ${i+1}</th>`).join('')}<th>Summe</th></tr></thead><tbody>`;
+  h+=`<tr class="dim"><td>Kalenderjahr</td>${yrs.map(i=>`<td>${S.basis.start+i}</td>`).join('')}<td></td></tr>`;
+  SERIES.forEach((s,k)=>{h+=`<tr><td><span class="sw" style="background:var(--${s[1]})"></span>${s[0]}</td>${R[k].map(v=>`<td>${nf.format(v)}</td>`).join('')}<td class="sum">${nf.format(sum(R[k]))}</td></tr>`;});
+  h+=`<tr class="total"><td>Gesamt mit Upsides</td>${m.tot.map(v=>`<td>${nf.format(v)}</td>`).join('')}<td>${nf.format(sum(m.tot))}</td></tr>`;
+  h+=`<tr class="dim"><td>Zusatz in % der Basis</td>${m.tot.map((v,i)=>`<td>+${pf(v/m.B.vo[i]-1)}</td>`).join('')}<td>+${pf(sum(m.tot)/sum(m.B.vo)-1)}</td></tr></tbody>`;
+  $('#ytable').innerHTML=h;
+  $('#legend').innerHTML=SERIES.map(s=>`<span><i style="background:var(--${s[1]})"></i>${s[0]}</span>`).join('');
+}
+function chart(m){
+  const R=rows(m), W=1000,H=330,pl=10,pb=30,pt=28, max=Math.max(...m.tot)*1.08, bw=(W-2*pl)/NY, sy=v=>(H-pb)-(v/max)*(H-pb-pt);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Gestapelte Säulen je Marktjahr">`;
+  for(let i=0;i<NY;i++){ let base=0; const x=pl+i*bw+bw*.18, w=bw*.64;
+    SERIES.forEach((se,k)=>{const v=R[k][i]; if(v>0){s+=`<rect x="${x.toFixed(1)}" y="${sy(base+v).toFixed(1)}" width="${w.toFixed(1)}" height="${(sy(base)-sy(base+v)).toFixed(1)}" fill="var(--${se[1]})"/>`; base+=v;}});
+    s+=`<text x="${(x+w/2).toFixed(1)}" y="${(sy(base)-6).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--fg)">${nf.format(base)}</text>`;
+    s+=`<text x="${(x+w/2).toFixed(1)}" y="${H-10}" text-anchor="middle" font-size="11" fill="var(--muted)">Jahr ${i+1}</text>`; }
+  s+=`<line x1="${pl}" x2="${W-pl}" y1="${H-pb+.5}" y2="${H-pb+.5}" stroke="var(--line)"/></svg>`;
+  $('#chart').innerHTML=s;
+}
+function basisInputs(){
+  const b=S.basis, items=[['Kalenderjahr Marktjahr 1','start','n'],['Betroffene soziale Phobie','bet_soz','n'],['Behandlungsquote soziale Phobie','q_soz','%'],['Betroffene Agoraphobie','bet_ago','n'],['Behandlungsquote Agoraphobie','q_ago','%'],['Betroffene spezifische Phobie','bet_spz','n'],['Behandlungsquote spezifische Phobie','q_spz','%'],['Wachstum Patient:innen je Jahr','wachs','%'],['Offenheit Patient:innen Jahr 1','off_pat','%'],['Eignung laut Therapeut:in','eign','%'],['Psychotherapeut:innen','ther','n'],['Offenheit Therapeut:innen Jahr 1','off_th','%'],['Preis Jahr 1','preis1','€'],['Preis ab Jahr 2','preis2','€']];
+  $('#basisInputs').innerHTML=items.map(([l,k])=>`<li><b>${l}</b><input type="number" step="any" id="basis-${k}" data-basis="${k}" value="${b[k]}"></li>`).join('');
+}
+function render(){ const m=model(); kpis(m); cards(m); ytable(m); chart(m); persist(); }
+try{const saved=JSON.parse(localStorage.getItem('upside-rechner-state')||'null'); if(saved&&saved.basis&&saved.d2p&&saved.fv&&saved.ha){Object.assign(S.basis,saved.basis);['d2p','fv','ha'].forEach(k=>{Object.assign(S[k],saved[k],{p:S[k].p});for(const q in S[k].p)if(saved[k].p&&saved[k].p[q])S[k].p[q]=saved[k].p[q];});}}catch(e){}
+function persist(){try{localStorage.setItem('upside-rechner-state',JSON.stringify(S));}catch(e){}}
+basisInputs(); render();
+
+// ---------- Ereignisse
+document.addEventListener('click',e=>{const b=e.target.closest('.switch'); if(!b)return; const key=b.id.split('-')[0]; S[key].on=!S[key].on; render();});
+document.addEventListener('change',e=>{
+  const el=e.target, id=el.id||'', v=parseFloat(el.value);
+  if(el.dataset.basis){ if(!isNaN(v)) S.basis[el.dataset.basis]=v; render(); return; }
+  if(el.dataset.key){ if(!isNaN(v)) S[el.dataset.key].p[el.dataset.k][+el.dataset.j]=v; render(); return; }
+  const [key,f]=id.split('-'); if(!S[key])return;
+  if(f==='sz')S[key].sz=+el.value; else if(f==='meth')S[key].meth=el.value; else if(f==='budget')S[key].budget=+el.value;
+  else if(f==='start')S[key].start=Math.max(1,Math.min(11,Math.round(v)||1)); else if(f==='wachs')S[key].wachs=(v||0)/100; else if(f==='same')S[key].same=(v||0)/100; else if(f==='ad')S[key].ad=(v||0)/100;
+  render();
+});
+</script>
+</body>
+</html>
